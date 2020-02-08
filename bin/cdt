@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+
+###########################################################
+# Imports
+##########################################################
+# Python stdlibs
+import getopt as opt
+import sys as sys
+import yaml as yaml
+import enum as enum
+
+# cdt Modules
+import cdt.archive as archive
+
+
+###########################################################
+# Enums
+###########################################################
+class command(enum.Enum):
+    DESCRIBE = 1 << 0
+    EXTRACT = 1 << 1
+    APPEND = 1 << 2
+
+
+##########################################################
+# Functions
+##########################################################
+def readCommandLine(argv):
+    opts, _ = opt.getopt(
+            argv,
+            '',
+            ['desc=',
+             'extract=',
+             'append='])
+
+    option = 0
+    folder = ''
+    for option, arguments in opts:
+        if option in('--desc'):
+            option = command.DESCRIBE.value
+            folder = arguments
+        elif option in('--extract'):
+            option = command.EXTRACT.value
+            folder = arguments
+        elif option in('--append'):
+            option = command.APPEND.value
+            folder = arguments
+
+    return(argv[-1], option, folder)
+
+def dumpInfo(arch, folder):
+    print(yaml.dump(arch.getIndex(folder)))
+
+def dumpFolder(arch, folder):
+    arch.extract(folder)
+
+def appendFolder(arch, folder):
+    arch.append(folder)
+
+
+##########################################################
+# Entry/Main
+##########################################################
+tarfile, option, folder = readCommandLine(sys.argv[1:])
+arch = archive.Archive(tarfile)
+
+functionOption = {
+    command.DESCRIBE.value: dumpInfo,
+    command.EXTRACT.value: dumpFolder,
+    command.APPEND.value: appendFolder
+}
+caller = functionOption.get(option)
+caller(arch, folder)
