@@ -8,6 +8,7 @@ import tarfile as tarfile
 import re as regex
 import json as jsonlib
 import os as os
+import shutil as shutil
 
 ##########################################################
 # Functions
@@ -28,14 +29,33 @@ class Archive():
                 self.tar.extract(member, path='./out')
         tar.close()
 
+    def changeIndex(self, folderInfo):
+        json = self.__getIndex__()
+        json.update(folderInfo)
+
     def append(self, folder):
-        os.system('gunzip ' + self.archive)
-        tar = tarfile.open(self.archive[:-3], 'a')
-        tar.add(folder)
-        os.system('gzip ' + self.archive[:-3])
+        os.mkdir('cgt-build-cgt')
+        os.chdir('cgt-build-cgt')
+        tar = tarfile.open('../' + self.archive, 'r:gz')
+        tar.extractall()
+        shutil.copytree('../' + folder, './' + folder)
         tar.close()
+        tar = tarfile.open('../' + self.archive, 'w:gz')
+        directory = os.listdir('./')
+        for folder in directory:
+            tar.add(folder)
+        tar.close()
+        os.chdir('../')
+        shutil.rmtree('cgt-build-cgt')
 
     def getIndex(self, folder):
+        json = self.__getIndex__()
+        return json[folder]
+
+    """
+    Private methods
+    """
+    def __getIndex__(self):
         tar = tarfile.open(self.archive, 'r:gz')
         for member in tar.getmembers():
             if regex.match(r'.*index.json', member.name):
@@ -44,9 +64,7 @@ class Archive():
                 self.json = content
                 break
         tar.close()
-        return self._json[folder]
-
-    # dhef
+        return self.json
 
     """
     Class public members with
